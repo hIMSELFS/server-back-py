@@ -1,6 +1,5 @@
 import os
 from urllib import response
-# from tkinter import E
 from flask import Flask, flash, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -10,6 +9,7 @@ import threading, queue
 import utils
 import json
 import logging
+
 q = queue.Queue()
 app = Flask(__name__)
 CORS(app)
@@ -39,7 +39,7 @@ def home():
 
 #Тестируем fetch
 @app.route('/check/pass',methods=["GET","POST"])
-def test():
+def check_pass():
     if (len(request.data) == 0):
         response = json.dumps({
             "status":False,
@@ -48,8 +48,8 @@ def test():
         })
         return response,200
 
-    data = request.json.get("password")
-    if (data == None):
+    password = request.json.get("password")
+    if (password == None):
         response = json.dumps({
             "status":False,
             "checked":False,
@@ -57,7 +57,17 @@ def test():
         })
         return response,200
     
-    result = utils.CheckPass().check(data)
+    login =request.json.get("login")
+    if (login == None):
+        response = json.dumps({
+            "status":False,
+            "checked":False,
+            "error":"Не передан логин"
+        })
+        return response,200
+    
+    result = utils.CheckPass().check(login=login,password=password)
+
     response = json.dumps({
             "status":True,
             "checked":result,

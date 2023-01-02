@@ -9,7 +9,7 @@ import os
 from dotenv import dotenv_values
 import uuid
 from datetime import datetime
-
+from database import DataBases 
 
 
 ''''
@@ -155,9 +155,7 @@ class CheckPass:
         self.config = dotenv_values(".env")
         self.secret = self.config["SECRET_PHASE"]
 
-    def check(self,password:str):
-        today = datetime.today().strftime('%Y%m%d')
-        hash_secret = hashlib.sha256(f"{self.secret}{today}".encode())
-        hex_dig = hash_secret.hexdigest()
-        return hex_dig == password
-
+    def check(self,login:str,password:str):
+        in_databases = DataBases().getPasswordByLogin(login)
+        if (in_databases == None): return False
+        return in_databases == password
