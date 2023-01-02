@@ -57,7 +57,6 @@ def test():
         })
         return response,200
     
-    print("data",data)
     result = utils.CheckPass().check(data)
     response = json.dumps({
             "status":True,
