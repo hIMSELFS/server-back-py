@@ -6,9 +6,9 @@ import os
 import hashlib
 import colorama
 import os
-import random
 from dotenv import dotenv_values
 import uuid
+from datetime import datetime
 
 
 
@@ -150,5 +150,14 @@ class GiveFile:
     def __init__(self):
         pass
     
+class CheckPass:
+    def __init__(self):
+        self.config = dotenv_values(".env")
+        self.secret = self.config["SECRET_PHASE"]
 
-# SaveFile().run(name="heidisql",ext="exe")
+    def check(self,password:str):
+        today = datetime.today().strftime('%Y%m%d')
+        hash_secret = hashlib.sha256(f"{self.secret}{today}".encode())
+        hex_dig = hash_secret.hexdigest()
+        return hex_dig == password
+

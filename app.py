@@ -1,12 +1,14 @@
 import os
+from urllib import response
 # from tkinter import E
-from flask import Flask, flash, request, redirect, url_for
+from flask import Flask, flash, jsonify, request, redirect, url_for
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from dotenv import dotenv_values
 import uuid
 import threading, queue
 import utils
+import json
 
 q = queue.Queue()
 app = Flask(__name__)
@@ -30,21 +32,39 @@ def queue_save():
         q.task_done()
 
 # Начальная страница
-@app.route("/",methods=["GET"])
+@app.route("/",methods=["GET","POST"])
 def home():
-    return '''
-            <html>
-            <body>
-            API
-            </body>
-            </html>
-        '''
+    response = json.dumps({'API':"V1.0"})
+    return response
 
 #Тестируем fetch
-@app.route('/get/test',methods=["GET","POST"])
+@app.route('/check/pass',methods=["GET","POST"])
 def test():
-	response ={"test":'value'}
-	return response
+    if (len(request.data) == 0):
+        response = json.dumps({
+            "status":False,
+            "checked":False,
+            "error":"Не передан пароль"
+        })
+        return response,200
+
+    data = request.json.get("password")
+    if (data == None):
+        response = json.dumps({
+            "status":False,
+            "checked":False,
+            "error":"Не передан пароль"
+        })
+        return response,200
+    
+    print("data",data)
+    result = utils.CheckPass().check(data)
+    response = json.dumps({
+            "status":True,
+            "checked":result,
+            "error":""
+        })
+    return response,200
 
 # Загружаем файл
 @app.route("/load", methods=['GET', 'POST'])
