@@ -9,7 +9,7 @@ import uuid
 import threading, queue
 import utils
 import json
-
+import logging
 q = queue.Queue()
 app = Flask(__name__)
 CORS(app)
@@ -120,5 +120,8 @@ if __name__ == "__main__":
     threading.Thread(target=queue_save, daemon=True).start()
     app.secret_key = SECRET_KEY
     app.debug = False
+    app.logger.disabled = True
+    log = logging.getLogger('werkzeug')
+    log.disabled = True
     app.run(host='0.0.0.0', port=7777)
 
