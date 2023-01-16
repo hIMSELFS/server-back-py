@@ -47,7 +47,6 @@ class SaveFile:
         self.orig_size = 0
         
         self.config = dotenv_values(".env")
-        
         self.OUT_PATH = self.config['OUT_PATH']
         self.SOURCE_PATH = self.config["SOURCE_PATH"]
         self.LOGS_PATH = self.config['LOGS_PATH']
