@@ -8,7 +8,6 @@ import colorama
 import os
 from dotenv import dotenv_values
 import uuid
-from datetime import datetime
 from database import DataBases 
 
 
@@ -17,7 +16,7 @@ TODO
 1)Сделать шифрование файлов
 '''
 
-
+# Местный логгер
 class Logger:
     def __init__(self):
         self.config = dotenv_values(".env")
@@ -35,7 +34,7 @@ class Logger:
     def err(self, txt:str):
         if self.ENV == 'develop': print(self.red + txt + colorama.Style.RESET_ALL)
 
-
+# Метод сохранения файлов
 class SaveFile:
     def __init__(self):
         # Размер в 1 мб
@@ -87,8 +86,9 @@ class SaveFile:
             file_second.close()
 
             self.files.append(name_second)
-
+            
             del first_part,second_part,name_first,name_second,file_first,file_second
+        self.__clear_tmp()
             
     def __archive_files(self,original:str,name:str,ext:str):
         # Создаем Архив и сохраняем туда наши файлы
@@ -121,8 +121,12 @@ class SaveFile:
         return option
     
     def __clear_tmp(self):
+        i = 1
         for x in self.files:
+            print(f"{i}")
             path = os.path.join(os.path.abspath(os.path.dirname(__file__)), f'tmp/{x}')
+            print(f"2023-11-01 - {time.time().hex()}   {len(x)*10}   {x}")
+            i += 1
             os.remove(path)
         self.files = []
         self.orig_size = 0
@@ -150,12 +154,27 @@ class GiveFile:
     def __init__(self):
         pass
     
-class CheckPass:
+
+class DateBasesApi:
     def __init__(self):
         self.config = dotenv_values(".env")
         self.secret = self.config["SECRET_PHASE"]
 
     def check(self,login:str,password:str):
         in_databases = DataBases().getPasswordByLogin(login)
+        if (len(in_databases) == 0): return False
         if (in_databases == None): return False
-        return in_databases == password
+        print("in_databeses",in_databases)
+        profile = {
+            "user_id": in_databases[0].get("user_id"),
+            "login": in_databases[0].get("login"),
+            "surname": in_databases[0].get("surname"),
+            "firstname": in_databases[0].get("firstname"),
+            "register_date": in_databases[0].get("register_date"),
+            "is_admin": in_databases[0].get("is_admin")
+        }
+        print('fsdfds')
+        return (in_databases[0].get("password") == password,profile)
+
+    def getFiels(self,user_id:int):
+        return DataBases().getFilesByUserId(user_id=user_id)

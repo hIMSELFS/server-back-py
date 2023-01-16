@@ -1,20 +1,23 @@
 import os
-from urllib import response
-from flask import Flask, flash, jsonify, request, redirect, url_for
+from re import U
+from cv2 import log
+# from urllib import response
+from flask import Flask, flash, request,Response
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from dotenv import dotenv_values
 import uuid
 import threading, queue
-import utils
+from utils import Logger,SaveFile,DateBasesApi
 import json
-import logging
+import logging 
+from database import DataBases 
 
 q = queue.Queue()
 app = Flask(__name__)
 CORS(app)
 config = dotenv_values(".env")
-SOURCE_PATH = config["SOURCE_PATH"]
+SOURCE_PATH ="./incoming/"
 SECRET_KEY = config['SECRET_KEY']
 
 def allowed_file(filename):
@@ -26,54 +29,76 @@ def queue_save():
     while True:
         item = q.get()
         name:str = item['uuid_name']
-        utils.Logger().log(f'Working on {item["filename"]}')
-        utils.SaveFile().run(original=item["filename"],name=name.split(".")[0],ext=name.split(".")[1])
-        utils.Logger().process(f'Finished {item["filename"]}')
+        Logger().log(f'Working on {item["filename"]}')
+        SaveFile().run(original=item["filename"],name=name.split(".")[0],ext=name.split(".")[1])
+        Logger().process(f'Finished {item["filename"]}')
         q.task_done()
 
 # Начальная страница
-@app.route("/",methods=["GET","POST"])
+@app.route("/",methods=["GET"])
 def home():
-    response = json.dumps({'API':"V1.0"})
+    response = json.dumps({'API':"V1.1"})
     return response
 
-#Тестируем fetch
-@app.route('/check/pass',methods=["GET","POST"])
+#!!!Авторизация!!! 
+@app.route('/check/pass',methods=["POST"])
 def check_pass():
+    # Проверяем, есть ли данные в запросе
     if (len(request.data) == 0):
-        response = json.dumps({
-            "status":False,
-            "checked":False,
-            "error":"Не передан пароль"
-        })
-        return response,200
+        response ={ "status":False, "checked":False, "error":"Не переданы обязательные параметры" }
+        return  Response(json.dumps(response), mimetype='application/json',status=400)
 
+    # Проверяем наличие пароля
     password = request.json.get("password")
     if (password == None):
-        response = json.dumps({
-            "status":False,
-            "checked":False,
-            "error":"Не передан пароль"
-        })
-        return response,200
+        response ={ "status":False, "checked":False,  "error":"Не передан пароль" }
+        return  Response(json.dumps(response), mimetype='application/json',status=400)
     
+    # Проверяем наличие логина
     login =request.json.get("login")
     if (login == None):
-        response = json.dumps({
-            "status":False,
-            "checked":False,
-            "error":"Не передан логин"
-        })
-        return response,200
+        response = { "status":False,  "checked":False, "error":"Не передан логин" }
+        return Response(json.dumps(response), mimetype='application/json',status=400)
     
-    result = utils.CheckPass().check(login=login,password=password)
+    result = DateBasesApi().check(login=login,password=password)
+    if (result == False): 
+         response = { "status":True, "checked":False,"data":[], "error":"" }
+         return Response(json.dumps(response), mimetype='application/json',status=200)
+    
+    response = { "status":True, "checked":result[0],"data":result[1], "error":"" }
+    return Response(json.dumps(response), mimetype='application/json',status=200)
 
-    response = json.dumps({
-            "status":True,
-            "checked":result,
-            "error":""
-        })
-    return response,200
+
+#!!!Получение файлов для пользователя!!!
+@app.route("/get/files",methods=["POST"])
+def get_all_files():
+    # Проверяем получение данных
+    if (len(request.data) == 0):
+        response ={ "status":False, "checked":False, "error":"Не переданы обязательные параметры: user_id" }
+        return  Response(json.dumps(response), mimetype='application/json',status=400)
+
+    # Проверяем наличие пароля
+    user_id = request.json.get("user_id")
+    if (user_id == None):
+        response ={ "status":False, "checked":False,  "error":"Не передан user_id" }
+        return  Response(json.dumps(response), mimetype='application/json',status=400)
+    
+    result = DateBasesApi().getFiels(user_id=user_id)
+    response = { "status":True, "data":result, "error":"" }
+
+    return Response(json.dumps(response), mimetype='application/json',status=200)
+
+
+
+
+# test
+@app.route("/test",methods=["GET","POST"])
+def test():
+    result = DataBases().getPasswordByLogin(login="valery.azarov")
+    Logger().log(txt="Готово")
+    response = json.dumps({'data':result})
+    return response
+
 
 # Загружаем файл
 @app.route("/load", methods=['GET', 'POST'])
@@ -129,8 +154,8 @@ if __name__ == "__main__":
     threading.Thread(target=queue_save, daemon=True).start()
     app.secret_key = SECRET_KEY
     app.debug = False
-    app.logger.disabled = True
-    log = logging.getLogger('werkzeug')
-    log.disabled = True
+    # app.logger.disabled = True
+    # log = logging.getLogger('werkzeug')
+    # log.disabled = True
     app.run(host='0.0.0.0', port=7777)
 
